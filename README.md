@@ -54,7 +54,7 @@ Kubernetes(k8s)是Google开源的容器集群管理系统（谷歌内部:Borg）
     3.Docker
     Node上需要运行容器服务。
 ## 架构:
- ![架构图](https://www.kubernetes.org.cn/headline)
+ ![架构图](architecture.png)
 
 
 ## 部署
