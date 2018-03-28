@@ -60,6 +60,45 @@ Kubernetes(k8s)是Google开源的容器集群管理系统（谷歌内部:Borg）
 ## 部署
 
 ## fabric8 api
-## pv pvc demo
 
+#### 1、引入依赖包
+
+```
+    <dependency>
+		<groupId>io.fabric8</groupId>
+		<artifactId>kubernetes-client</artifactId>
+		<version>2.6.3</version>
+	</dependency>
+	<dependency>
+		<groupId>com.google.code.gson</groupId>
+		<artifactId>gson</artifactId>
+		<version>2.4</version>
+	</dependency>
+	<dependency>
+		<groupId>com.alibaba</groupId>
+		<artifactId>fastjson</artifactId>
+		<version>1.2.3</version>
+	</dependency>
+```
+
+#### 2、创建访问客户端
+```
+        Config config = new ConfigBuilder().withMasterUrl("https://192.168.70.138:6443/")
+                .withUsername("admin").withPassword("123456")
+            //    .withNamespace("demo")
+                .withTrustCerts(true).build();
+        KubernetesClient client = new DefaultKubernetesClient(config);
+```
+
+####3、通过client进行crud
+ 
+```
+        List<Namespace> nameSpaceList =client.namespaces().list().getItems();//查询所有的namespaces列表
+        for(Namespace ns: nameSpaceList){
+            System.out.println("namespace >"+ns.getMetadata().getName());//输出所有的namespace name
+        }
+```
+
+## pv pvc demo
+> https://kubernetes.io/docs/user-guide/persistent-volumes/walkthrough/
 
