@@ -1,0 +1,73 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: kube-proxy
+  namespace: kube-system
+  labels:
+    app: kube-proxy
+data:
+  kubeconfig.conf: |
+    apiVersion: v1
+    kind: Config
+    clusters:
+    - cluster:
+        certificate-authority: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        server: https://k8s.service.ob.local:6443
+      name: default
+    contexts:
+    - context:
+        cluster: default
+        namespace: default
+        user: default
+      name: default
+    current-context: default
+    users:
+    - name: default
+      user:
+        tokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kube-proxy
+  namespace: kube-system
+
+---
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: kube-proxy
+  namespace: kube-system
+  labels:
+    k8s-app: kube-proxy
+spec:
+  selector:
+    matchLabels:
+      k8s-app: kube-proxy
+  template:
+    metadata:
+      labels:
+        k8s-app: kube-proxy
+    spec:
+      hostNetwork: true
+      containers:
+      - name: kube-proxy
+        image: image.cloudos.yihecloud.com/google_containers/kube-proxy-amd64:v1.6.10
+        imagePullPolicy: IfNotPresent
+        command:
+        - /usr/local/bin/kube-proxy
+        - --kubeconfig=/var/lib/kube-proxy/kubeconfig.conf
+        - --proxy-mode=iptables
+        - --masquerade-all
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - mountPath: /var/lib/kube-proxy
+          name: kube-proxy
+      serviceAccountName: kube-proxy
+      volumes:
+      - name: kube-proxy
+        configMap:
+          name: kube-proxy
+

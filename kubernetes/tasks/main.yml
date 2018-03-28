@@ -1,0 +1,49 @@
+---
+# tasks file for kubernetes
+
+ #- name: add host 
+   #shell: "sed -i '{{master_ip}} k8s.service.ob.local'  /etc/hosts"
+ - name: rm hosts
+   lineinfile:
+       dest: "/etc/hosts"
+       regexp: 'k8s.service.ob.local'
+       state: absent
+ - name: add host to hosts
+   lineinfile:
+       dest: "/etc/hosts"
+       line: "{{master_ip}} k8s.service.ob.local"
+ - name: mkdir tmp path
+   shell: "mkdir -p /tmp/addons"
+
+ - name: copy shell file
+   copy: src={{ item.src }} dest={{ item.dest }} mode="u+x"
+   with_items:
+      - {src: "docker.sh", dest: /tmp/docker.sh}
+      - {src: "gen.sh", dest: /tmp/gen.sh}
+      - {src: "kube.sh", dest: /tmp/kube.sh}
+ - name: addons file
+   copy: src={{ item.src }} dest={{ item.dest }}
+   with_items:
+      - {src: "kube-ui.yaml", dest: /tmp/addons/kube-ui.yaml}
+      - {src: "kube-calico.yaml", dest: /tmp/addons/kube-calico.yaml}
+      - {src: "kube-dns.yaml", dest: /tmp/addons/kube-dns.yaml}
+      - {src: "kube-proxy.yaml", dest: /tmp/addons/kube-proxy.yaml}
+ 
+ - name: copy kubelet config to node
+   copy: 
+      src: /tmp/ansible/package/{{mflat_ip }}/tmp/kubelet.conf
+      dest: /tmp/kubelet.conf
+   when: ha_status == 'node'
+ - name: install 
+   shell: cd /tmp && ./kube.sh {{ha_status}} {{master_ip }}
+ 
+ #- name: mkdir tmp path
+ #  shell: "mkdir -p /tmp/ansible/package/{{master_ip }}"
+ #  delegate_to: localhost
+ #  when: ha_status == 'master'
+ - name: fetch kubelet.conf
+   fetch:
+      src: /tmp/kubelet.conf
+      dest: /tmp/ansible/package
+   when: ha_status == 'master'
+

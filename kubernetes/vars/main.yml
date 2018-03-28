@@ -1,0 +1,7 @@
+---
+# vars file for kubernetes
+
+
+ha_status: master
+
+master_ip: 192.168.71.42
