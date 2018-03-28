@@ -90,7 +90,7 @@ Kubernetes(k8s)是Google开源的容器集群管理系统（谷歌内部:Borg）
         KubernetesClient client = new DefaultKubernetesClient(config);
 ```
 
-####3、通过client进行crud
+#### 3、通过client进行crud
  
 ```
         List<Namespace> nameSpaceList =client.namespaces().list().getItems();//查询所有的namespaces列表
@@ -99,6 +99,6 @@ Kubernetes(k8s)是Google开源的容器集群管理系统（谷歌内部:Borg）
         }
 ```
 
-## pv pvc demo
+## pv & pvc 示例
 > https://kubernetes.io/docs/user-guide/persistent-volumes/walkthrough/
 
