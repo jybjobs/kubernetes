@@ -108,6 +108,7 @@ EOF
   sed -i "s/var\/lib/data/g" /etc/etcd/etcd.conf
   reload etcd
   ```
+  
 #### 6. 安装 k8s master（worker节点不需要安装）
 
 ```
