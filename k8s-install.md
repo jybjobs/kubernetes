@@ -65,7 +65,7 @@ ExecStart=/usr/bin/kubelet $online\\
   --node-status-update-frequency=10s \\
   --enforce-node-allocatable= \\
   --pod-manifest-path=/etc/kubernetes/manifests \\
-  --pod-infra-container-image=docker.yihecloud.com/google_containers/pause-amd64:3.0 \\
+  --pod-infra-container-image=docker.xxx.com/google_containers/pause-amd64:3.0 \\
   \$NODE_HOSTNAME \\
   \$KUBELET_ARGS
 Restart=always
