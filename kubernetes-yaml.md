@@ -224,14 +224,14 @@ spec:　　　　　　　　　
       requests:
         cpu: string
         memory: string
-    livenessProbe:　＃　健康检查－判断容器存活
+    livenessProbe:　＃　健康检查－判断容器存活；readinessProbe 判断服务是否准备好
       exec:
         command: [string]
       httpGet:
         path: string
         port: int
         host: string
-        scheme: string
+        scheme: string # HTTP or HTTPS
         httpHeaders:
         - name: string
           value: string
@@ -239,16 +239,16 @@ spec:　　　　　　　　　
         port: int
       initialDelaySeconds: number　＃　启动容器后首次进行健康检查的等待时间，单位为秒
       timeoutSeconds: number　　　　＃　健康检查发送请求等待响应时间
-      periodSeconds: number
-      successThreshold: 0
-      failureThreshold: 0
+      periodSeconds: number        #  执行探测的频率。默认是10秒，最小1秒
+      successThreshold: 0    # 探测失败后，最少连续探测成功多少次才被认定为成功。默认是1。对于liveness必须是1。最小值是1。
+      failureThreshold: 0    # 探测成功后，最少连续探测失败多少次才被认定为失败。默认是3。最小值是1。
     securityContext:
       privileged: false
   restartPolicy: [Always | Never | OnFailure]   ＃　重启策略
   nodeSelector: object　　　　　　　＃　node选择器
   imagePullSecrets:　　　　　　　　　＃　镜像下载授权
   - name: string
-  hostNetwork: false
+  hostNetwork: false　＃　如果配置为true　则默认容器使用host网络，如果不配置hostPort默认容器端口和宿主机端口对应，如果指定了hostPort，则hostPort必须等于containerPort的值
   volumes:
   - name: string
     emptyDir: {}
@@ -304,42 +304,54 @@ spec:
 ```
 
 ## deployment
+Deployment同样为Kubernetes的一个核心内容，主要职责同样是为了保证pod的数量和健康，90%的功能与Replication Controller完全一样，可以看做新一代的Replication Controller。但是，它又具备了Replication Controller之外的新特性：
+
+Replication Controller全部功能：Deployment继承了上面描述的Replication Controller全部功能。
+
+事件和状态查看：可以查看Deployment的升级详细进度和状态。
+
+回滚：当升级pod镜像或者相关参数的时候发现问题，可以使用回滚操作回滚到上一个稳定的版本或者指定的版本。
+
+版本记录: 每一次对Deployment的操作，都能保存下来，给予后续可能的回滚使用。
+
+暂停和启动：对于每一次升级，都能够随时暂停和启动。
+
+多种升级方案：Recreate：删除所有已存在的pod,重新创建新的; RollingUpdate：滚动升级，逐步替换的策略，同时滚动升级时，支持更多的附加参数，例如设置最大不可用pod数量，最小升级间隔时间等等。
 
 ```
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: xsy-discovery-service-dp
+  name: demo-service-dp
   labels:
-    app: xsy-discovery-service
+    app: demo-service
 spec:
   replicas: 3
+  minReadySeconds: 120     #滚动升级时60s后认为该pod就绪
+  strategy:
+    rollingUpdate:  ##由于replicas为3,则整个升级,pod个数在2-4个之间
+      maxSurge: 1      #滚动升级时会先启动1个pod
+      maxUnavailable: 1 #滚动升级时允许的最大Unavailable的pod个数
   selector:
     matchLabels:
-      app: xsy-discovery-service
+      app: demo-service
   template:
     metadata:
       labels:
-        app: xsy-discovery-service
+        app: demo-service
     spec:
       hostNetwork: false
       containers:
         - name: ingageapp
-          image: docker.xsy.io/app/xsy-discovery-service:1.8
+          image: docker.xsy.io/app/demo-service:1.8
           args: []
           env:
             - name: XSY_DISCOVERY_LOG_LEVEL
               value: "info"
             - name: SERVICE_NAME
-              value: "xsy-discovery-service"
+              value: "demo-service"
             - name: XSY_DISCOVERY_SERVER_PORT
               value: "8080"
-            - name: XSY_DISCOVERY_USER_NAME
-              value: eureka
-            - name: XSY_DISCOVERY_PASSWORD
-              value: ingage
-            - name: XSY_DISCOVERY_URL
-              value: "localhost"
           ports:
             - containerPort: 8080
           resources:
@@ -352,19 +364,40 @@ spec:
 ```
 ## service
 
+Service是kubernetes最核心的概念，通过创建Service，可以为一组具有相同功能的容器应用提供一个统一的入口地址，并且将请求进行负载分发到后端的各个容器应用上。
+
+Service服务是一个虚拟概念，逻辑上代理后端pod。众所周知，pod生命周期短，状态不稳定，pod异常后新生成的pod ip会发生变化，之前pod的访问方式均不可达。通过service对pod做代理，service有固定的ip和port，ip:port组合自动关联后端pod，即使pod发生改变，kubernetes内部更新这组关联关系，使得service能够匹配到新的pod。这样，通过service提供的固定ip，用户再也不用关心需要访问哪个pod，以及pod是否发生改变，大大提高了服务质量。如果pod使用rc创建了多个副本，那么service就能代理多个相同的pod，通过kube-proxy，实现负载均衡。
+
+集群中每个Node节点都有一个组件kube-proxy，实际上是为service服务的，通过kube-proxy，实现流量从service到pod的转发，kube-proxy也可以实现简单的负载均衡功能。
+
+kube-proxy代理模式：userspace方式。kube-proxy在节点上为每一个服务创建一个临时端口，service的IP:port过来的流量转发到这个临时端口上，kube-proxy会用内部的负载均衡机制（轮询），选择一个后端pod，然后建立iptables，把流量导入这个pod里面。
+
 ```
----
-kind: Service
 apiVersion: v1
-metadata:
-  name: xsy-discovery-service
+kind: Service
+matadata:
+  name: string
+  namespace: string
+  labels:
+    - name: string
+  annotations:
+    - name: string
 spec:
-  selector:
-    app: xsy-discovery-service
+  selector: []
+  type: string  # 默认为　clusterIP(虚拟服务IP); NodePort（开发宿主机端口） loadBalancer（使用外接负载均衡器）
+  clusterIP: string　＃ clusterIP类型下不指定默认分配，ＬＢ下需要指定ＩＰ
+  sessionAffinity: string　＃是否支持serssion,clientIP支持同一个客户端ＩＰ转发到同一个ｐｏｄ上执行
   ports:
-    - protocol: TCP
-      port: 8080
-      targetPort: 8080
+  - name: string
+    protocol: string　＃TCP（默认） or UDP
+    port: int　　　　　# service port
+    targetPort: int　　# 后端pod端口
+    nodePort: int　　# 指定node 端口，不指定时由系统自动生成
+  status:
+    loadBalancer:　＃外部负载均衡器配置
+      ingress:
+        ip: string
+        hostname: string
 ```
 
 
