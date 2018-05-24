@@ -13,6 +13,7 @@ Kubernetes(k8s)是Google开源的容器集群管理系统（谷歌内部:Borg）
     Kubernetes中的任意API对象都是通过Label进行标识，Label的实质是一系列的K/V键值对。Label是Replication Controller和Service运行的基础，二者通过Label来进行关联Node上运行的Pod。
     5.Node
     Node是Kubernetes集群架构中运行Pod的服务节点（亦叫agent或minion）。Node是Kubernetes集群操作的单元，用来承载被分配Pod的运行，是Pod运行的宿主机。
+   [更多](kubernetes-yaml.md)
 #### Kubernetes组件
 > Kubernetes Master控制组件，调度管理整个系统（集群），包含如下组件:
 
