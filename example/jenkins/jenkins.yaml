@@ -1,0 +1,65 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: jenkins
+  namespace: jenkins
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: master
+    spec:
+      containers:
+      - name: master
+        image: docker.xsy.io/tools/jenkins:lts
+        ports:
+        - containerPort: 8080
+        - containerPort: 50000
+        readinessProbe:
+          httpGet:
+            path: /login
+            port: 8080
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 2
+          failureThreshold: 5
+        env:
+        - name: JENKINS_OPTS
+          valueFrom:
+            secretKeyRef:
+              name: jenkins
+              key: options
+        - name: JAVA_OPTS
+          value: '-Xms4096m -Xmx4096m'
+        volumeMounts:
+        - mountPath: /var/jenkins_home
+          name: jenkins-home
+        - mountPath: /var/run/docker.sock
+          name: docker-run
+        - mountPath: /usr/bin/docker
+          name: docker-cmd
+        resources:
+          limits:
+            # cpu: 2000m
+            memory: 4096Mi
+          requests:
+            # cpu: 2000m
+            memory: 4096Mi
+      volumes:
+      - name: docker-run
+        hostPath:
+          path: /var/run/docker.sock
+      - name: docker-cmd
+        hostPath:
+          path: /usr/bin/docker
+      - name: jenkins-home
+        #hostPath:
+        #  path: /data/jenkins
+        nfs:
+          server: 10.10.20.71
+          path: /data/jenkins
+        #gcePersistentDisk:
+        #  pdName: jenkins-home
+        #  fsType: ext4
+        #  partition: 1

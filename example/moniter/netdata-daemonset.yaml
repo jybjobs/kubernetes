@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: netdata
+  namespace: monitoring
+  labels:
+    k8s-app: netdata-monitor
+spec:
+  selector:
+    matchLabels:
+      name: netdata-monitor
+  template:
+    metadata:
+      labels:
+        name: netdata-monitor
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+      - name: netdata-monitor
+        image: netdata/netdata
+        ports:
+        - name: netdata-port
+          containerPort: 19999
+          hostPort: 19999
+        securityContext:
+          capabilities:
+            add: 
+             - SYS_PTRACE
+        resources:
+          limits:
+            memory: 200Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+        volumeMounts:
+        - name: host-proc
+          mountPath: /host/proc
+        - name: host-sys
+          mountPath: host/sys
+      #    readOnly: true
+        - name: docker-sock
+          mountPath: /var/run/docker.sock
+      terminationGracePeriodSeconds: 30
+      hostNetwork: true
+      volumes:
+      - name: host-proc
+        hostPath:
+          path: /proc
+      - name: host-sys
+        hostPath:
+          path: /sys
+      - name: docker-sock
+        hostPath:
+          path: /var/run/docker.sock

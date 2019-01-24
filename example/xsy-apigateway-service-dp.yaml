@@ -1,0 +1,85 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: xsy-apigateway-service-dp
+  labels:
+    app: xsy-apigateway-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: xsy-apigateway-service
+  template:
+    metadata:
+      labels:
+        app: xsy-apigateway-service
+    spec:
+      hostNetwork: true
+      containers:
+        - name: ingageapp
+          image: docker.xsy.io/app/xsy-apigateway-service:1.1
+          args: []
+          env:
+            # - name: XSY_DISCOVERY_LOG_LEVEL
+            #   value: "info"
+            - name: SERVICE_NAME
+              value: "xsy-apigateway-service"
+            - name: XSY_APIGATEWAY_SERVER_PORT
+              value: "9030"
+            - name: XSY_APIGATEWAY_BFF_ROUTE_URL
+              value: "bff.ingageapp.com"
+            - name: XSY_APIGATEWAY_BFF_ROUTE_PORT
+              value: "7000"
+            - name: XSY_DISCOVERY_USER_NAME
+              value: eureka
+            - name: XSY_DISCOVERY_PASSWORD
+              value: ingage
+            - name: XSY_DISCOVERY_URL
+              #value: "xsy-discovery-service.default.svc.cluster.local"
+              value: "localhost"
+            - name: XSY_DISCOVERY_SERVER_PORT
+              value: "26652"
+              #value: "8080"
+            - name: XSY_APIGATEWAY_MANAGEMENT_PORT
+              value: "10400"
+            - name: ZOOKEEPER_CUSTER_URI
+              value: "localhost:2181"
+          ports:
+            - containerPort: 9030
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 200m
+            limits:
+              memory: 1024Mi
+              cpu: 600m
+          readinessProbe:
+            httpGet:
+              path: /management/health
+              port: 10400
+              scheme: HTTP
+              httpHeaders:
+                - name: Authorization
+                  value: "Basic YWRtaW46YWRtaW4="
+            initialDelaySeconds: 30
+            timeoutSeconds: 3            
+            periodSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+      imagePullSecrets:
+        - name: docker-xsy-io-secret
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: xsy-apigateway-svc
+spec:
+  selector:
+    app: xsy-apigateway-service
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 9030
+      targetPort: 9030
+

@@ -1,0 +1,86 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: zk-dp
+  labels:
+    app: zk
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zk
+  template:
+    metadata:
+      labels:
+        app: zk
+    spec:
+      hostNetwork: false
+      containers:
+        - name: zk
+          image: docker.xsy.io/base/zookeeper:1.0
+          volumeMounts:
+            - name: zkconfig
+              mountPath: /config/zoo.cfg
+            - name: zk-data
+              mountPath: /data
+          args: []
+          env: []
+          ports:
+            - name: client
+              containerPort: 2181
+            - name: server 
+              containerPort: 2888
+            - name: leader-election
+              containerPort: 3888
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 0.5
+            limits:
+              memory: 1Gi
+              cpu: 1
+          #readinessProbe:
+          #  exec:
+          #    command:
+          #    - sh
+          #    - -c
+          #    - "zookeeper-ready 2181"
+          #  initialDelaySeconds: 10
+          #  timeoutSeconds: 5
+          #livenessProbe:
+          #  exec:
+          #    command:
+          #    - sh
+          #    - -c
+          #    - "zookeeper-ready 2181"
+          #  initialDelaySeconds: 10
+          #  timeoutSeconds: 5
+      imagePullSecrets:
+        - name: docker-xsy-io-secret
+      volumes:
+        - name: zkconfig
+          configMap:
+            name: zk-config
+        - name: zk-data
+          hostPath: 
+            path: /data/zk
+            
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zk-svc
+  labels:
+    app: zk
+spec:
+  type: NodePort
+  ports:
+  - port: 2181
+    name: client
+  - port: 2888
+    name: server
+  selector:
+    app: zk
+
+
+
