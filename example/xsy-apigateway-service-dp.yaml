@@ -27,7 +27,7 @@ spec:
             - name: XSY_APIGATEWAY_SERVER_PORT
               value: "9030"
             - name: XSY_APIGATEWAY_BFF_ROUTE_URL
-              value: "bff.ingageapp.com"
+              value: "bff.xxx.com"
             - name: XSY_APIGATEWAY_BFF_ROUTE_PORT
               value: "7000"
             - name: XSY_DISCOVERY_USER_NAME
