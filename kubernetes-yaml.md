@@ -342,7 +342,7 @@ spec:
     spec:
       hostNetwork: false
       containers:
-        - name: ingageapp
+        - name: demo
           image: docker.xsy.io/app/demo-service:1.8
           args: []
           env:
